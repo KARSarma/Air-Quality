@@ -20,17 +20,16 @@ jobs:
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-      # Step 3: Configure Kubectl
-      - name: Configure Kubectl
+      - name: Install gke-gcloud-auth-plugin
         run: |
-          gcloud container clusters get-credentials kubeflow-cluster --zone us-central1-a --project ${{ secrets.GCP_PROJECT }}
+          sudo apt-get update
+          sudo apt-get install -y google-cloud-sdk-gke-gcloud-auth-plugin
 
+      - name: Authenticate GKE Cluster
+        run: gcloud container clusters get-credentials kubeflow-cluster --zone us-central1-a --project ${{ secrets.GCP_PROJECT }}
 
-      # Step 4: Apply Pipeline
       - name: Apply Kubeflow Pipeline
-        run: |
-          kubectl apply -f ./kubeflow/pipeline.yaml
-
+        run: kubectl apply -f ./kubeflow/pipeline.yaml
 
       # Step 5: Build and Push Docker Image
       - name: Build and Push Docker Image
