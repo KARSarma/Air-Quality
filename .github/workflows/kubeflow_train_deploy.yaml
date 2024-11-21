@@ -25,13 +25,15 @@ jobs:
         run: |
           gcloud container clusters get-credentials kubeflow-cluster --zone us-central1-a --project ${{ secrets.GCP_PROJECT }}
 
-      # Step 4: Build and Push Docker Image
+
+      # Step 4: Apply Pipeline
+      - name: Apply Kubeflow Pipeline
+        run: |
+          kubectl apply -f .kubeflow/pipeline.yaml
+
+
+      # Step 5: Build and Push Docker Image
       - name: Build and Push Docker Image
         run: |
           docker build -t gcr.io/${{ secrets.GCP_PROJECT }}/train-image:latest .
           docker push gcr.io/${{ secrets.GCP_PROJECT }}/train-image:latest
-
-      # Step 5: Apply Pipeline
-      - name: Apply Kubeflow Pipeline
-        run: |
-          kubectl apply -f .kubeflow/pipeline.yaml
