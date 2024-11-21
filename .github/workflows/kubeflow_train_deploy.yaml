@@ -20,10 +20,15 @@ jobs:
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-      - name: Install gke-gcloud-auth-plugin
+      - name: Configure Google Cloud SDK Repository
         run: |
+          echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+          sudo apt-get install -y apt-transport-https ca-certificates
+          curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
           sudo apt-get update
-          sudo apt-get install -y google-cloud-sdk-gke-gcloud-auth-plugin
+
+      - name: Install gke-gcloud-auth-plugin
+        run: sudo apt-get install -y google-cloud-sdk-gke-gcloud-auth-plugin
 
       - name: Authenticate GKE Cluster
         run: gcloud container clusters get-credentials kubeflow-cluster --zone us-central1-a --project ${{ secrets.GCP_PROJECT }}
