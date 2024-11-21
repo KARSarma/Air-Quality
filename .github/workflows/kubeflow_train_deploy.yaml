@@ -3,7 +3,7 @@ name: Train and Deploy via Kubeflow
 on:
   push:
     branches:
-      - vertexai
+      - kubeflow
 
 jobs:
   kubeflow-pipeline:
