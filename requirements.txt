@@ -1,5 +1,5 @@
 pytest
-numpy 
+numpy
 pandas
 scikit-learn
 kneed
