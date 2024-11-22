@@ -10,8 +10,9 @@ import os
 import pandas as pd
 from google.cloud import storage
 import logging
+from airflow.providers.http.operators.http import SimpleHttpOperator
 
-from airflow.providers.google.cloud.operators.functions import GoogleCloudFunctionInvokeFunctionOperator
+#from airflow.providers.google.cloud.operators.functions import GoogleCloudFunctionInvokeFunctionOperator
 from airflow.utils.dates import days_ago
 from airflow.utils.trigger_rule import TriggerRule
 from airflow.operators.python import PythonOperator, BranchPythonOperator
@@ -481,13 +482,14 @@ merge_branch_anamoly_detection_val_test= DummyOperator(task_id='merge_branch_ana
 #)
 
     
-trigger_cloud_function = GoogleCloudFunctionInvokeFunctionOperator(
-        task_id="invoke_cloud_function",
-        location="us-central1",  # Region where your Cloud Function is deployed
-        project_id="airquality-438719",  # Your GCP project ID
-        function_id="fetch-air-quality-data",  # Name of the deployed Cloud Function
-        input_data={},  # Optional: Data payload to send to the function
-        dag=dag
+
+trigger_cloud_function = SimpleHttpOperator(
+        task_id='invoke_cloud_function',
+        http_conn_id='google_cloud_function_http',
+        endpoint='projects/airquality-438719/locations/us-central1/functions/fetch-air-quality-data',
+        method='POST',
+        headers={"Content-Type": "application/json"},
+        data='{"key": "value"}',  # Replace with your payload
     )
 
 # load the data and save it in pickle file
