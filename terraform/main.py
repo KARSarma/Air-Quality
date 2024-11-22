@@ -5,12 +5,13 @@ import os
 from google.cloud import storage
 from datetime import datetime
 
+# Fetch environment variables
 api_key = os.getenv("API_KEY")
 city = os.getenv("location_city")
 country_code = "US"
-start_date_1= os.getenv("initial_date1")  
+start_date_1 = os.getenv("initial_date1")  
 end_date_1 = os.getenv("final_date1")
-start_date_2= os.getenv("initial_date2")  
+start_date_2 = os.getenv("initial_date2")  
 end_date_2 = os.getenv("final_date2")
 
 # Initialize Google Cloud Storage client
@@ -67,15 +68,16 @@ def flatten_data(data):
     return flattened_data
 
 def save_to_gcs(data, filename):
+    # Prepend 'api_data/' to the filename to save in the subfolder
     bucket = client.bucket(bucket_name)
-    blob = bucket.blob(filename)
+    blob = bucket.blob(f"api_data/{filename}")
     flattened_data = flatten_data(data)
     df = pd.DataFrame(flattened_data)
     blob.upload_from_string(df.to_csv(index=False), 'text/csv')
-    print(f"Data saved to GCS as {filename}")
+    print(f"Data saved to GCS as api_data/{filename}")
 
 def collect_air_quality_data(request):
-    location_id = 869  # You can replace with dynamic ID fetching if needed
+    location_id = 869  # Replace with dynamic ID fetching if needed
 
     if location_id:
         air_pollution_data_1 = get_air_pollution_data(location_id, start_date_1, end_date_1)
