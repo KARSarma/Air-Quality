@@ -10,7 +10,7 @@ import os
 import pandas as pd
 from google.cloud import storage
 import logging
-from airflow.providers.http.operators.http import SimpleHttpOperator
+from airflow.providers.http.operators.http import HttpOperator
 
 #from airflow.providers.google.cloud.operators.functions import GoogleCloudFunctionInvokeFunctionOperator
 from airflow.utils.dates import days_ago
@@ -483,14 +483,16 @@ merge_branch_anamoly_detection_val_test= DummyOperator(task_id='merge_branch_ana
 
     
 
-trigger_cloud_function = SimpleHttpOperator(
-        task_id='invoke_cloud_function',
-        http_conn_id='google_cloud_function_http',
-        endpoint='projects/airquality-438719/locations/us-central1/functions/fetch-air-quality-data',
-        method='POST',
-        headers={"Content-Type": "application/json"},
-        data='{"key": "value"}',  # Replace with your payload
-    )
+trigger_cloud_function = HttpOperator(
+    task_id='invoke_cloud_function',
+    http_conn_id='google_cloud_function_http',
+    endpoint='fetch-air-quality-data',
+    method='POST',
+    headers={"Content-Type": "application/json"},
+    data={},  # Payload if required
+    dag=dag
+)
+
 
 # load the data and save it in pickle file
 data_Loader = PythonOperator(
@@ -507,7 +509,6 @@ data_Loader = PythonOperator(
 data_Bias = PythonOperator(
     task_id='bias_detection_and_mitigation',
     python_callable=data_biasing,
-
     dag=dag)
 
 # split data into traning and testing
