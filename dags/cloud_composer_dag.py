@@ -3,216 +3,23 @@ from scipy import stats
 from airflow.operators.python import PythonOperator
 from datetime import datetime
 import numpy as np
+from airflow import configuration as conf
 from google.cloud import storage
 import io
 import os
 import pandas as pd
-from airflow import DAG
-import os
-import sys
-from airflow import configuration as conf
-import logging
-
 from google.cloud import storage
-# from my_operators.stacks_csv import stack_csvs_to_pickle
-# from my_operators.split_data import split_data
-# from my_operators.pull_train import pull_train_file
-# from my_operators.pivot import pivot_data_task
-# from my_operators.drop_columns import clean_data
-# from my_operators.check_missing import process_data
-# from my_operators.check_anamoly import anomaly_detection
-# from my_operators.feature_eng import feature_engineering
-# from my_operators.schema_gen import data_validation
-# from my_operators.data_bias import perform_analysis
-# from my_operators.check_initial_schema import generate_schema_and_statistics
-# from my_operators.check_output_schema import generate_output_schema_and_statistics
-
-
-# # Helper function to check for new files in GCS
-# def check_for_new_files(bucket_name, folder_path, **kwargs):
-#     # Create a GCS client
-#     storage_client = storage.Client()
-#     bucket = storage_client.bucket(bucket_name)
-    
-#     # List the files in the folder
-#     blobs = bucket.list_blobs(prefix=folder_path)
-#     new_files = [blob.name for blob in blobs if blob.name.endswith('.csv')]
-    
-#     # Pass the list of files as an XCom to the next task
-#     if new_files:
-#         kwargs['ti'].xcom_push(key='file_list', value=new_files)
-#     else:
-#         raise ValueError("No new files found in the specified GCS folder")
-
-# # Default arguments for the DAG
-# default_args = {
-#     'owner': 'airflow',
-#     'start_date': datetime.now(),
-#     'email_on_failure': False,
-#     'retries': 1
-# }
-
-# # Define the DAG
-# with DAG(
-#     'gcs_file_pipeline_dag',
-#     default_args=default_args,
-#     description='Check GCS, stack CSVs into a pickle, and split the data',
-#     schedule_interval=None,  # Triggered manually or on a schedule
-# ) as dag:
-
-#     # Task 1: Check for new files in GCS
-#     check_for_files_task = PythonOperator(
-#         task_id='check_for_new_files',
-#         python_callable=check_for_new_files,
-#         op_kwargs={
-#             'bucket_name': 'airquality-mlops-rg',
-#             'folder_path': 'api_data/'
-#         },
-#         provide_context=True,
-#     )
-
-#     # Task 2: Stack CSVs from GCS and save as a pickle
-#     stack_csvs_task = PythonOperator(
-#         task_id='stack_csvs',
-#         python_callable=stack_csvs_to_pickle,
-#         op_kwargs={
-#             'bucket_name': 'airquality-mlops-rg',
-#             'folder_path': 'api_data/',
-#             'output_pickle_file': 'processed_data/stacked_air_pollution.pkl'
-#         },
-#     )
-#     # Task to check bias
-#     data_bias_task = PythonOperator(
-#     task_id='perform_analysis',
-#     python_callable=perform_analysis,
-#     op_kwargs={
-#         'bucket_name': 'airquality-mlops-rg',  # Replace with your GCS bucket name
-#         'input_pickle_file': 'processed_data/stacked_air_pollution.pkl',
-#         'sensitive_feature': 'month',
-#         'threshold': 0.2,
-#         'output_pickle_file': 'processed_data/resampled_data.pkl',
-#     },
-    
-# )
-#     # Task 3: Split the data
-#     split_data_task = PythonOperator(
-#         task_id='split_data',
-#         python_callable=split_data,
-#         op_kwargs={
-#             'bucket_name': 'airquality-mlops-rg',
-#             'input_pickle_file': 'processed_data/stacked_air_pollution.pkl',
-#             'output_train_file': 'processed_data/train_data.pkl',
-#             'output_test_file': 'processed_data/test_data.pkl'
-#         },
-#     )
-
-#     schema_check_task = PythonOperator(
-#     task_id='check_schema_and_generate_stats',
-#     python_callable=generate_schema_and_statistics,
-    
-# )
-
-#         # Dummy task to pull train file path
-#     pull_train_file_task = PythonOperator(
-#         task_id='pull_train_file',
-#         python_callable=pull_train_file,
-#         provide_context=True,  # Ensure context is provided
-#     )
-
-#         # Task 4: Pivot data
-#     pivot_task = PythonOperator(
-#         task_id='pivot_gcs_data',
-#         python_callable=pivot_data_task,
-#         op_kwargs={
-#             'bucket_name': 'airquality-mlops-rg',
-#             'input_file_path': "processed_data/train_data.pkl",  # Pull train file path from the previous task
-#             'output_file_path': 'processed_data/pivoted_train_data.pkl',
-#         },
-#         provide_context=True,
-#     )
-
-
-#     clean_data_task = PythonOperator(
-#         task_id='clean_data',
-#         python_callable=clean_data,
-#         op_kwargs={
-#             'bucket_name': 'airquality-mlops-rg',
-#             'input_file_path': 'processed_data/schema_gen.pkl',
-#             'output_file_path': 'processed_data/cleaned_train_data.pkl',
-#         }
-#     )
-    
-#     # Define the task using PythonOperator
-#     process_data_task = PythonOperator(
-#         task_id='process_data',
-#         python_callable=process_data,
-#         op_kwargs={
-#             'bucket_name': 'airquality-mlops-rg',
-#             'input_file_path': 'processed_data/cleaned_train_data.pkl',
-#             'output_file_path': 'processed_data/fill_na.pkl'
-#         }
-#     )
-
-#  # Define the task using PythonOperator
-#     check_anamoly_task = PythonOperator(
-#         task_id='anomaly_detection_and_cleaning',
-#         python_callable=anomaly_detection,
-#         op_kwargs={
-#             'bucket_name': 'airquality-mlops-rg',
-#             'input_file_path': 'processed_data/fill_na.pkl',
-#             'output_file_path': 'processed_data/check_anamoly.pkl'
-#         }
-#     )
-
-#     feature_engineering_task = PythonOperator(
-#         task_id='feature_engineering',
-#         python_callable= feature_engineering,
-#         op_kwargs={
-#             'bucket_name': 'airquality-mlops-rg',
-#             'input_file_path': 'processed_data/check_anamoly.pkl',
-#             'output_file_path': 'processed_data/feature_engineer.pkl'
-#         }
-#     )
-#     output_schema_check_task = PythonOperator(
-#     task_id='check_schema_and_generate_stats',
-#     python_callable= generate_output_schema_and_statistics,
-# )
-#     data_validation_task = PythonOperator(
-#         task_id='data_validation',
-#         python_callable=data_validation,
-#         op_kwargs={
-#             'bucket_name': 'airquality-mlops-rg',
-#             'file_path': 'processed_data/pivoted_train_data.pkl',
-#             'output_file_path': 'processed_data/schema_gen.pkl'
-#         }
-#     )
-
-# # Define task dependencies
-# check_for_files_task >> stack_csvs_task >> data_bias_task >> split_data_task >> schema_check_task >> pull_train_file_task >> pivot_task >> data_validation_task >> clean_data_task >> process_data_task >> check_anamoly_task >> feature_engineering_task >> output_schema_check_task 
-
-
-
-
-
-
-
-
-
-
-
-
-from airflow import DAG
-import os
-import sys
-from airflow import configuration as conf
 import logging
+
+from airflow.providers.google.cloud.operators.functions import GoogleCloudFunctionInvokeFunctionOperator
+from airflow.utils.dates import days_ago
 from airflow.utils.trigger_rule import TriggerRule
 from airflow.operators.python import PythonOperator, BranchPythonOperator
 from airflow.operators.email import EmailOperator
 from airflow.operators.dummy import DummyOperator
 from datetime import timedelta,datetime
 from airflow.utils.dates import days_ago
-from my_operators.data_air import download_data_function
+#from dags.DataPreprocessing.src.data_air import download_data_function
 from my_operators.data_loader import stack_csvs_to_pickle
 from my_operators.data_split import split
 from my_operators.pivoting_data import pivot_parameters as pivoting_data_train
@@ -220,24 +27,54 @@ from my_operators.removal_of_uneccesary_cols import remove_uneccesary_cols as re
 from my_operators.anamoly_detection import anamoly_detection_val as anamoly_detection_train
 from my_operators.check_missing_values import handle_missing_vals as check_missing_values_train
 from my_operators.feature_eng import feature_engineering as feature_eng_train
-from my_operators.pivoting_data import pivot_parameters as pivoting_data_test
-from my_operators.removal_of_uneccesary_cols import remove_uneccesary_cols as removal_of_uneccesary_cols_test
-from my_operators.anamoly_detection import anamoly_detection_val as anamoly_detection_test
-from my_operators.check_missing_values import handle_missing_vals as check_missing_values_test
-from my_operators.feature_eng import feature_engineering as feature_eng_test
+from my_operators.test.pivoting_data import pivot_parameters as pivoting_data_test
+from my_operators.test.removal_of_uneccesary_cols import remove_uneccesary_cols as removal_of_uneccesary_cols_test
+from my_operators.test.anamoly_detection import anamoly_detection_val as anamoly_detection_test
+from my_operators.test.check_missing_values import handle_missing_vals as check_missing_values_test
+from my_operators.test.feature_eng import feature_engineering as feature_eng_test
 from my_operators.check_schema_original_airpollution import  main_generate_schema_and_statistics as main_check_schema_original
-from my_operators.test_schema.check_output_data_schema import main_generate_schema_and_statistics as main_test_schema
+from my_operators.test.check_output_data_schema import main_generate_schema_and_statistics as main_test_schema
 from my_operators.check_output_data_schema import main_generate_schema_and_statistics as main_train_schema
 from my_operators.data_bias_check_final import bias_main as data_biasing
+from airflow.utils.email import send_email_smtp
+from datetime import datetime
+import smtplib
+from email.mime.text import MIMEText
 
-# def check_anomalies_and_send_email(**kwargs):
-#     anomalies = kwargs['ti'].xcom_pull(task_ids='download_data_from_api')
-#     logging.info(f"Anomalies detected: {anomalies}")
-#     if anomalies:  # If anomalies are detected, trigger the email
-#         logging.info("Branching to send_anomaly_alert_api")
-#         return 'send_anomaly_alert_api'
-#     logging.info("Branching to continue_pipeline")
-#     return 'continue_pipeline'
+conf.set('core', 'enable_xcom_pickling', 'True')
+conf.set('core', 'enable_parquet_xcom', 'True')
+
+
+ 
+def custom_send_email_smtp(to, subject, html_content, **kwargs):
+    smtp_server = "smtp.gmail.com"
+    smtp_port = 587
+    sender_email = "anirudhak881@gmail.com"      # Replace with your email address
+    receiver_email = "anirudhak881@gmail.com"  # Replace with recipient email
+    password = "ksmhwqrzhjllqsaz"             # Replace with your app-specific password
+    msg = MIMEText(html_content, "html")
+    msg["Subject"] = subject
+    msg["From"] = sender_email
+    msg["To"] = ", ".join(to) if isinstance(to, list) else to
+    try:
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.starttls()  # Secure the connection
+            server.login(sender_email, password)
+            server.sendmail(sender_email, to, msg.as_string())
+            print("Email sent successfully.")
+    except Exception as e:
+                    print(f"Error sending email: {e}")
+# Replace the default send_email_smtp with custom_send_email_smtp
+send_email_smtp = custom_send_email_smtp
+
+def check_anomalies_and_send_email(**kwargs):
+    anomalies = kwargs['ti'].xcom_pull(task_ids='download_data_from_api')
+    logging.info(f"Anomalies detected: {anomalies}")
+    if anomalies:  # If anomalies are detected, trigger the email
+        logging.info("Branching to send_anomaly_alert_api")
+        return 'send_anomaly_alert_api'
+    logging.info("Branching to continue_pipeline")
+    return 'continue_pipeline'
 
 def check_anomalies_loading_data(**kwargs):
     anomalies = kwargs['ti'].xcom_pull(task_ids='load_data_pickle')
@@ -387,12 +224,12 @@ branch_removal_data_test = BranchPythonOperator(
     dag=dag
 )
 
-# branch_task = BranchPythonOperator(
-#     task_id='check_anomalies_and_send_email',
-#     python_callable=check_anomalies_and_send_email,
-#     provide_context=True,
-#     dag=dag
-# )
+branch_task = BranchPythonOperator(
+    task_id='check_anomalies_and_send_email',
+    python_callable=check_anomalies_and_send_email,
+    provide_context=True,
+    dag=dag
+)
 
 branch_task_load_data = BranchPythonOperator(
     task_id='check_anomalies_loading_data',
@@ -433,6 +270,7 @@ send_anomaly_alert_handle_missing_vals_test = EmailOperator(
                     {% else %}
                         <p>No specific anomaly details available.</p>
                     {% endif %}""",
+    conn_id='gmail_smtp',
     dag=dag
 )
 
@@ -447,6 +285,7 @@ send_anomaly_alert_handle_missing_vals_train = EmailOperator(
                     {% else %}
                         <p>No specific anomaly details available.</p>
                     {% endif %}""",
+    conn_id='gmail_smtp',
     dag=dag
 )
 
@@ -461,6 +300,7 @@ send_anomaly_removal_data_test = EmailOperator(
                     {% else %}
                         <p>No specific anomaly details available.</p>
                     {% endif %}""",
+    conn_id='gmail_smtp',
     dag=dag
 )
 
@@ -476,8 +316,9 @@ send_anomaly_removal_data_train = EmailOperator(
                     {% else %}
                         <p>No specific anomaly details available.</p>
                     {% endif %}""",
+    conn_id='gmail_smtp',
     dag=dag
-)
+)  
 
 send_anomaly_alert = EmailOperator(
     task_id='send_anomaly_alert_api',
@@ -494,6 +335,7 @@ send_anomaly_alert = EmailOperator(
                     {% else %}
                         <p>No specific anomaly details available.</p>
                     {% endif %}""",
+    conn_id='gmail_smtp',
     dag=dag
 )
 
@@ -508,6 +350,7 @@ send_anomaly_alert_load_data = EmailOperator(
                     {% else %}
                         <p>No specific anomaly details available.</p>
                     {% endif %}""",
+    conn_id='gmail_smtp',
     dag=dag
 )
 
@@ -522,6 +365,7 @@ send_anomaly_alert_train_test = EmailOperator(
                     {% else %}
                         <p>No specific anomaly details available.</p>
                     {% endif %}""",
+    conn_id='gmail_smtp',
     dag=dag
 )
 
@@ -536,6 +380,7 @@ send_anomaly_pivot_data_train = EmailOperator(
                     {% else %}
                         <p>No specific anomaly details available.</p>
                     {% endif %}""",
+    conn_id='gmail_smtp',
     dag=dag
 )
 
@@ -550,6 +395,7 @@ send_anomaly_alert_anamolies_vals_test= EmailOperator(
                     {% else %}
                         <p>No specific anomaly details available.</p>
                     {% endif %}""",
+    conn_id='gmail_smtp',
     dag=dag
 )
 
@@ -564,6 +410,7 @@ send_anomaly_alert_anamolies_vals_train= EmailOperator(
                     {% else %}
                         <p>No specific anomaly details available.</p>
                     {% endif %}""",
+    conn_id='gmail_smtp',
     dag=dag
 )
 
@@ -578,10 +425,11 @@ send_anomaly_pivot_data_test = EmailOperator(
                     {% else %}
                         <p>No specific anomaly details available.</p>
                     {% endif %}""",
+    conn_id='gmail_smtp',
     dag=dag
 )
 
-#continue_pipeline = DummyOperator(task_id='continue_pipeline', dag=dag)
+continue_pipeline = DummyOperator(task_id='continue_pipeline', dag=dag)
 
 continue_pipeline_load_data = DummyOperator(task_id='continue_pipeline_load_data', dag=dag)
 
@@ -603,7 +451,7 @@ continue_pipeline_anamolies_vals_test = DummyOperator(task_id='continue_pipeline
 
 continue_pipeline_anamolies_vals_train = DummyOperator(task_id='continue_pipeline_anamolies_vals_train',dag=dag)
 
-#merge_branch = DummyOperator(task_id='merge_branch', trigger_rule='none_failed_min_one_success',dag=dag)
+merge_branch = DummyOperator(task_id='merge_branch', trigger_rule='none_failed_min_one_success',dag=dag)
 
 merge_branch_load_data = DummyOperator(task_id='merge_branch_load_data', trigger_rule='none_failed_min_one_success',dag=dag)
 
@@ -626,50 +474,46 @@ merge_branch_anamoly_detection_val_train= DummyOperator(task_id='merge_branch_an
 merge_branch_anamoly_detection_val_test= DummyOperator(task_id='merge_branch_anamoly_detection_val_test', trigger_rule='none_failed_min_one_success',dag=dag)
 
 # download the data in form of csv using data api 
-# download_data_api = PythonOperator(
-#     task_id='download_data_from_api',
-#     python_callable=download_data_function,
-#     dag=dag
-# )
+#download_data_api = PythonOperator(
+#    task_id='download_data_from_api',
+#    python_callable=download_data_function,
+#    dag=dag
+#)
+
+    
+trigger_cloud_function = GoogleCloudFunctionInvokeFunctionOperator(
+        task_id="invoke_cloud_function",
+        location="us-central1",  # Region where your Cloud Function is deployed
+        project_id="airquality-438719",  # Your GCP project ID
+        function_id="fetch-air-quality-data",  # Name of the deployed Cloud Function
+        input_data={},  # Optional: Data payload to send to the function
+        dag=dag
+    )
 
 # load the data and save it in pickle file
 data_Loader = PythonOperator(
     task_id='load_data_pickle',
     python_callable=stack_csvs_to_pickle,
-    op_kwargs={
-        'bucket_name': os.environ.get('BUCKET_NAME', 'airquality-mlops-rg'),  # Replace with your bucket name
-        'folder_path': os.environ.get('FOLDER_PATH', 'air_pollution_raw/'),   # Replace with your folder path
-        'output_pickle_file': os.environ.get('OUTPUT_PICKLE_FILE', 'processed_data/air_pollution.pkl'),  # Replace with your output file path
-    },
-    dag=dag,
+    op_args=[
+        os.getenv('LOAD_BUCKET_NAME', 'default-bucket'),  # Default value fallback
+        os.getenv('FOLDER_PATH', 'api_data/'),            # Default value fallback
+        os.getenv('LOAD_OUTPUT_PICKLE_FILE', 'processed/air_pollution.pkl')  # Default value fallback
+    ],
+    dag=dag
 )
 
 data_Bias = PythonOperator(
     task_id='bias_detection_and_mitigation',
     python_callable=data_biasing,
-    op_kwargs={
-        'bucket_name': 'airquality-mlops-rg',  # Replace with your GCS bucket name
-        'input_pickle_file': 'processed_data/air_pollution.pkl',
-        'sensitive_feature': 'month',
-        'threshold': 0.2,
-    },
-    dag=dag,
-)
 
+    dag=dag)
+
+# split data into traning and testing
 data_Split = PythonOperator(
     task_id='split_train_test',
     python_callable=split,
-    op_kwargs={
-        'bucket_name': 'airquality-mlops-rg',  # Replace with your GCS bucket name
-        'input_pickle_file_path': 'dags/DataPreprocessing/src/data_store_pkl_files/resampled_data.pkl',
-        'output_train_file_path': 'dags/DataPreprocessing/src/data_store_pkl_files/train_data/train_data.pkl',
-        'output_test_file_path': 'dags/DataPreprocessing/src/data_store_pkl_files/test_data/test_data.pkl',
-        'test_size': 0.2,
-        'random_state': 42,
-    },
-    dag=dag,
+    dag=dag
 )
-
 
 data_schema_original = PythonOperator(
     task_id = 'check_schema_of_original_air_data',
@@ -677,15 +521,11 @@ data_schema_original = PythonOperator(
     dag = dag
 )
 
+# pivot the data to contain pm2.5 parameters for train data
 data_train_pivot = PythonOperator(
     task_id='pivot_data_train',
     python_callable=pivoting_data_train,
-    op_kwargs={
-        'bucket_name': 'your_bucket_name',  # Replace with your GCS bucket name
-        'input_file_path': 'processed_data/stacked_air_pollution.pkl',
-        'output_file_path': 'pivoted_data/pivoted_air_pollution.pkl',
-    },
-    dag=dag,
+    dag=dag
 )
 
 # pivot the data to contain pm2.5 parameters for test data
@@ -695,17 +535,11 @@ data_test_pivot = PythonOperator(
     dag=dag
 )
 
+# remove values regarding other gases train data
 data_remove_cols_train = PythonOperator(
     task_id='data_remove_cols_train',
     python_callable=removal_of_uneccesary_cols_train,
-    op_kwargs={
-        'bucket_name': 'your_bucket_name',  # Replace with your GCS bucket name
-        'input_file_path': 'processed_data/stacked_air_pollution.pkl',
-        'output_file_path': 'cleaned_data/cleaned_air_pollution.pkl',
-        'columns_to_drop': ['co', 'no', 'no2', 'o3', 'so2']
-, 
-    },
-    dag=dag,
+    dag=dag
 )
 
 # remove values regarding other gases test data
@@ -715,15 +549,11 @@ data_remove_cols_test = PythonOperator(
     dag=dag
 )
 
+# handle missing values train data
 handle_missing_vals_train = PythonOperator(
     task_id='handle_missing_vals_train',
     python_callable=check_missing_values_train,
-    op_kwargs={
-        'bucket_name': 'your_bucket_name',  # Replace with your GCS bucket name
-        'input_file_path': 'dags/DataPreprocessing/src/data_store_pkl_files/train_data/cleaned_train_data.pkl',
-        'output_file_path': 'dags/DataPreprocessing/src/data_store_pkl_files/train_data/no_null_train_data.pkl',
-    },
-    dag=dag,
+    dag=dag
 )
 
 # handle missing values test data
@@ -733,15 +563,11 @@ handle_missing_vals_test = PythonOperator(
     dag=dag
 )
 
+# handle anamolies for train data
 anamolies_vals_train = PythonOperator(
     task_id='anamolies_vals_train',
     python_callable=anamoly_detection_train,
-    op_kwargs={
-        'bucket_name': 'your_bucket_name',  # Replace with your GCS bucket name
-        'input_file_path': 'dags/DataPreprocessing/src/data_store_pkl_files/train_data/no_null_train_data.pkl',
-        'output_file_path': 'dags/DataPreprocessing/src/data_store_pkl_files/train_data/no_anomaly_train_data.pkl',
-    },
-    dag=dag,
+    dag=dag
 )
 
 #handle anamolies for test data
@@ -751,15 +577,11 @@ anamolies_vals_test = PythonOperator(
     dag=dag
 )
 
+# feature engineering for train data
 feature_engineering_train = PythonOperator(
     task_id='feature_engineering_train',
     python_callable=feature_eng_train,
-    op_kwargs={
-        'bucket_name': 'your_bucket_name',  # Replace with your GCS bucket name
-        'input_file_path': 'dags/DataPreprocessing/src/data_store_pkl_files/train_data/no_anomaly_train_data.pkl',
-        'output_file_path': 'dags/DataPreprocessing/src/data_store_pkl_files/train_data/feature_eng_train_data.pkl',
-    },
-    dag=dag,
+    dag=dag
 )
 
 data_schema_train_data_feature_eng = PythonOperator(
@@ -782,8 +604,8 @@ feature_engineering_test = PythonOperator(
 )
 
 # order in which tasks are run
-#download_data_api >> branch_task >> [send_anomaly_alert, continue_pipeline] >> merge_branch \
-data_Loader >> branch_task_load_data >> [send_anomaly_alert_load_data,continue_pipeline_load_data] >> merge_branch_load_data \
+#download_data_apitrigger_cloud_function >> branch_task >> [send_anomaly_alert, continue_pipeline] >> merge_branch \
+trigger_cloud_function >> data_Loader >> branch_task_load_data >> [send_anomaly_alert_load_data,continue_pipeline_load_data] >> merge_branch_load_data \
 >> data_Bias \
 >> data_Split >> branch_task_split >> [send_anomaly_alert_train_test,continue_pipeline_train_test] >> merge_branch_train_test \
 >> data_schema_original \
@@ -812,6 +634,4 @@ data_Loader >> branch_task_load_data >> [send_anomaly_alert_load_data,continue_p
 
 if __name__ == "__main__":
     dag.cli()
-
-
 
