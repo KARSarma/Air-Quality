@@ -8,3 +8,8 @@ seaborn
 xgboost
 scipy
 fairlearn
+apache-airflow-providers-google
+google-cloud-storage
+protobuf
+shap
+mlflow
