@@ -11,7 +11,7 @@ variable "region" {
   default     = "us-central1"
 }
 
-variable "data_bucket_name" {
+variable "bucket_name" {
   description = "Name of the GCS bucket for data storage"
   type        = string
 }
@@ -21,3 +21,32 @@ variable "composer_env_name" {
   type        = string
 }
 
+variable "API_KEY" {
+  description = "API key for OpenAQ API"
+  type        = string
+}
+
+variable "gcs-bucket" {
+  description = "bucket_name"
+  type        = string
+}
+variable "initial_date1" {
+  description = "initial_date"
+  type        = string
+}
+variable "initial_date2" {
+  description = "initial_date2"
+  type        = string
+}
+variable "final_date1" {
+  description = "final_date1"
+  type        = string
+}
+variable "final_date2" {
+  description = "final_date2"
+  type        = string
+}
+variable "location_city" {
+  description = "location_city "
+  type        = string
+}

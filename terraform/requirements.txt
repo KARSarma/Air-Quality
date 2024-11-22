@@ -1,0 +1,5 @@
+functions-framework==3.*
+requests
+pandas
+numpy
+google-cloud-storage

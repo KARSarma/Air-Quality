@@ -6,10 +6,6 @@ provider "google" {
 }
 
 # Variables for project and environment configuration
-variable "bucket_name" {
-  description = "The name of the Cloud Storage bucket for Composer DAGs"
-  type        = string
-}
 
 variable "serviceAccount" {
   description = "The service account email"
@@ -130,4 +126,44 @@ resource "google_compute_subnetwork" "composer_subnetwork" {
   network       = google_compute_network.composer_network.name
   ip_cidr_range = "10.0.0.0/24"
   region        = var.region
+}
+
+
+resource "google_storage_bucket" "function_bucket" {
+  name     = "${var.project_id}-function-source"
+  location = var.region
+  force_destroy = true
+}
+
+resource "google_storage_bucket_object" "function_archive" {
+  name   = "function-source.zip"
+  bucket = google_storage_bucket.function_bucket.name
+  source = "${path.module}/function-source.zip"
+}
+
+resource "google_cloudfunctions_function" "cloud_function" {
+  name        = "fetch-air-quality-data"
+  runtime     = "python39"
+  available_memory_mb = 256
+  source_archive_bucket = google_storage_bucket.function_bucket.name
+  source_archive_object = google_storage_bucket_object.function_archive.name
+  trigger_http          = true
+  entry_point           = "collect_air_quality_data" # Name of the function in main.py
+  environment_variables = {
+    API_KEY       = var.API_KEY
+    gcs-bucket    = var.gcs-bucket
+    location_city = var.location_city
+    initial_date1 = var.initial_date1
+    final_date1   = var.final_date1
+    initial_date2 = var.initial_date2
+    final_date2   = var.final_date2
+  }
+}
+
+resource "google_cloudfunctions_function_iam_member" "invoker" {
+  project        = google_cloudfunctions_function.cloud_function.project
+  region         = google_cloudfunctions_function.cloud_function.region
+  cloud_function = google_cloudfunctions_function.cloud_function.name
+  role           = "roles/cloudfunctions.invoker"
+  member         = "allUsers"
 }
