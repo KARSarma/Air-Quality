@@ -10,9 +10,9 @@ import os
 import pandas as pd
 from google.cloud import storage
 import logging
-from airflow.providers.http.operators.http import HttpOperator
-
-#from airflow.providers.google.cloud.operators.functions import GoogleCloudFunctionInvokeFunctionOperator
+#from airflow.providers.http.operators.http import HttpOperator
+from airflow.providers.google.cloud.operators.functions import CloudFunctionInvokeFunctionOperator
+#from airflow.providers.google.cloud.operators.functions import CloudFunctionInvokeOperator
 from airflow.utils.dates import days_ago
 from airflow.utils.trigger_rule import TriggerRule
 from airflow.operators.python import PythonOperator, BranchPythonOperator
@@ -176,7 +176,7 @@ default_args = {
 }
 
 dag = DAG(
-    'datapipeline_new',
+    'datapipeline_copy',
     default_args=default_args,
     description='Data Preprocessing pipeline using Airflow DAG',
     schedule_interval=None,
@@ -481,14 +481,13 @@ merge_branch_anamoly_detection_val_test= DummyOperator(task_id='merge_branch_ana
 #    dag=dag
 #)
 
-    
 
-trigger_cloud_function = HttpOperator(
+invoke_function = CloudFunctionInvokeFunctionOperator(
     task_id='invoke_cloud_function',
-    endpoint='https://us-central1-airquality-438719.cloudfunctions.net/collect_airquality_data',
-    method='POST',
-    headers={"Content-Type": "application/json"},
-    data={},  # Payload if required
+    project_id='airquality-438719',
+    location='us-central1',
+    function_id='fetch-air-quality-data',
+    input_data={},
     dag=dag
 )
 
@@ -606,8 +605,8 @@ feature_engineering_test = PythonOperator(
 )
 
 # order in which tasks are run
-#download_data_apitrigger_cloud_function >> branch_task >> [send_anomaly_alert, continue_pipeline] >> merge_branch \
-trigger_cloud_function >> data_Loader >> branch_task_load_data >> [send_anomaly_alert_load_data,continue_pipeline_load_data] >> merge_branch_load_data \
+invoke_function >> branch_task >> [send_anomaly_alert, continue_pipeline] >> merge_branch \
+>> data_Loader >> branch_task_load_data >> [send_anomaly_alert_load_data,continue_pipeline_load_data] >> merge_branch_load_data \
 >> data_Bias \
 >> data_Split >> branch_task_split >> [send_anomaly_alert_train_test,continue_pipeline_train_test] >> merge_branch_train_test \
 >> data_schema_original \
