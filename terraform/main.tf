@@ -18,7 +18,7 @@ resource "random_id" "bucket_suffix" {
 }
 
 # Create a Cloud Storage bucket for Composer DAGs
-resource "google_storage_bucket" "airbucketname" {
+resource "google_storage_bucket" "bucketname" {
   name           = "${var.bucket_name}-${random_id.bucket_suffix.hex}"  # Ensure globally unique name
   location       = var.region
   force_destroy  = true  # Automatically delete bucket contents when destroying
@@ -45,7 +45,7 @@ resource "google_project_iam_member" "composer_service_account_roles" {
   role    = each.value
 }
 
-resource "google_composer_environment" "airquality-composer" {
+resource "google_composer_environment" "airquality" {
   name   = "airquality-composer"
   region = "us-central1"
 
@@ -60,8 +60,8 @@ resource "google_composer_environment" "airquality-composer" {
         LOAD_BUCKET_NAME                 = "airquality-mlops-rg"
         FOLDER_PATH                      = "api_data/"
         LOAD_OUTPUT_PICKLE_FILE          = "processed/air_pollution.pkl"
-        BIAS_CHECK_INPUT_PATH            = "processed/air_pollution.pkl"
-        BIAS_CHECK_OUTPUT_PATH           = "processed/resampled_data.pkl"
+        BIAS_CHECK_INPUT_PATH            = "gs://airquality-mlops-rg/processed/air_pollution.pkl"
+        BIAS_CHECK_OUTPUT_PATH           = "gs://airquality-mlops-rg/processed/resampled_data.pkl"
         BIAS_CHECK_SENSITIVE_FEATURE     = "month"
         BIAS_CHECK_THRESHOLD             = "0.2"
         DATA_SPLIT_BUCKET_NAME           = "airquality-mlops-rg"
@@ -128,7 +128,7 @@ resource "google_compute_subnetwork" "composer_subnetwork" {
   region        = var.region
 }
 
-
+/*
 resource "google_storage_bucket" "function_bucket" {
   name     = "${var.project_id}-function-source"
   location = var.region
@@ -167,3 +167,4 @@ resource "google_cloudfunctions_function_iam_member" "invoker" {
   role           = "roles/cloudfunctions.invoker"
   member         = "allUsers"
 }
+*/
