@@ -20,7 +20,7 @@ from airflow.operators.email import EmailOperator
 from airflow.operators.dummy import DummyOperator
 from datetime import timedelta,datetime
 from airflow.utils.dates import days_ago
-#from my_operators.data_air import download_and_save_data
+from my_operators.data_air import download_and_save_data
 
 from my_operators.data_loader import stack_csvs_to_pickle
 from my_operators.data_split import split
@@ -476,11 +476,11 @@ merge_branch_anamoly_detection_val_train= DummyOperator(task_id='merge_branch_an
 merge_branch_anamoly_detection_val_test= DummyOperator(task_id='merge_branch_anamoly_detection_val_test', trigger_rule='none_failed_min_one_success',dag=dag)
 
 # download the data in form of csv using data api 
-#download_data_api = PythonOperator(
-#    task_id='download_data_from_api',
-#    python_callable=download_data_function,
-#    dag=dag
-#)
+download_data_api = PythonOperator(
+    task_id='download_data_from_api',
+    python_callable=download_data_function,
+    dag=dag
+)
 
 # load the data and save it in pickle file
 data_Loader = PythonOperator(
@@ -595,8 +595,8 @@ feature_engineering_test = PythonOperator(
 )
 
 # order in which tasks are run
-#download_data_api >> branch_task >> [send_anomaly_alert, continue_pipeline] >> merge_branch \
-data_Loader >> branch_task_load_data >> [send_anomaly_alert_load_data,continue_pipeline_load_data] >> merge_branch_load_data \
+download_data_api >> branch_task >> [send_anomaly_alert, continue_pipeline] >> merge_branch \
+>> data_Loader >> branch_task_load_data >> [send_anomaly_alert_load_data,continue_pipeline_load_data] >> merge_branch_load_data \
 >> data_Bias \
 >> data_Split >> branch_task_split >> [send_anomaly_alert_train_test,continue_pipeline_train_test] >> merge_branch_train_test \
 >> data_schema_original \
