@@ -486,7 +486,7 @@ merge_branch_anamoly_detection_val_test= DummyOperator(task_id='merge_branch_ana
 trigger_cloud_function = HttpOperator(
     task_id='invoke_cloud_function',
     http_conn_id='google_cloud_function_http',
-    endpoint='fetch-air-quality-data',
+    endpoint='https://us-central1-airquality-438719.cloudfunctions.net/collect_airquality_data',
     method='POST',
     headers={"Content-Type": "application/json"},
     data={},  # Payload if required
