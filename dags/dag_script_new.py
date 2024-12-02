@@ -226,12 +226,12 @@ branch_removal_data_test = BranchPythonOperator(
     dag=dag
 )
 
-branch_task = BranchPythonOperator(
-    task_id='check_anomalies_and_send_email',
-    python_callable=check_anomalies_and_send_email,
-    provide_context=True,
-    dag=dag
-)
+# branch_task = BranchPythonOperator(
+#     task_id='check_anomalies_and_send_email',
+#     python_callable=check_anomalies_and_send_email,
+#     provide_context=True,
+#     dag=dag
+# )
 
 branch_task_load_data = BranchPythonOperator(
     task_id='check_anomalies_loading_data',
@@ -322,24 +322,24 @@ send_anomaly_removal_data_train = EmailOperator(
     dag=dag
 )  
 
-send_anomaly_alert = EmailOperator(
-    task_id='send_anomaly_alert_api',
-    to='anirudhak881@gmail.com',
-    subject='Data Anomaly Alert for API',
-    html_content="""<p>Anomalies detected in the data pipeline while using API. Details:</p>
-                    {% set anomalies = ti.xcom_pull(task_ids='download_data_from_api') %}
-                    {% if anomalies %}
-                        {% if anomalies is string %}
-                            <ul><li>{{ anomalies }}</li></ul>
-                        {% else %}
-                            <ul>{% for item in anomalies %}<li>{{ item }}</li>{% endfor %}</ul>
-                        {% endif %}
-                    {% else %}
-                        <p>No specific anomaly details available.</p>
-                    {% endif %}""",
-    conn_id='gmail_smtp',
-    dag=dag
-)
+# send_anomaly_alert = EmailOperator(
+#     task_id='send_anomaly_alert_api',
+#     to='anirudhak881@gmail.com',
+#     subject='Data Anomaly Alert for API',
+#     html_content="""<p>Anomalies detected in the data pipeline while using API. Details:</p>
+#                     {% set anomalies = ti.xcom_pull(task_ids='download_data_from_api') %}
+#                     {% if anomalies %}
+#                         {% if anomalies is string %}
+#                             <ul><li>{{ anomalies }}</li></ul>
+#                         {% else %}
+#                             <ul>{% for item in anomalies %}<li>{{ item }}</li>{% endfor %}</ul>
+#                         {% endif %}
+#                     {% else %}
+#                         <p>No specific anomaly details available.</p>
+#                     {% endif %}""",
+#     conn_id='gmail_smtp',
+#     dag=dag
+# )
 
 send_anomaly_alert_load_data = EmailOperator(
     task_id='send_anomaly_alert_load_data',
@@ -431,7 +431,7 @@ send_anomaly_pivot_data_test = EmailOperator(
     dag=dag
 )
 
-continue_pipeline = DummyOperator(task_id='continue_pipeline', dag=dag)
+# continue_pipeline = DummyOperator(task_id='continue_pipeline', dag=dag)
 
 continue_pipeline_load_data = DummyOperator(task_id='continue_pipeline_load_data', dag=dag)
 
@@ -453,7 +453,7 @@ continue_pipeline_anamolies_vals_test = DummyOperator(task_id='continue_pipeline
 
 continue_pipeline_anamolies_vals_train = DummyOperator(task_id='continue_pipeline_anamolies_vals_train',dag=dag)
 
-merge_branch = DummyOperator(task_id='merge_branch', trigger_rule='none_failed_min_one_success',dag=dag)
+# merge_branch = DummyOperator(task_id='merge_branch', trigger_rule='none_failed_min_one_success',dag=dag)
 
 merge_branch_load_data = DummyOperator(task_id='merge_branch_load_data', trigger_rule='none_failed_min_one_success',dag=dag)
 
@@ -476,11 +476,11 @@ merge_branch_anamoly_detection_val_train= DummyOperator(task_id='merge_branch_an
 merge_branch_anamoly_detection_val_test= DummyOperator(task_id='merge_branch_anamoly_detection_val_test', trigger_rule='none_failed_min_one_success',dag=dag)
 
 # download the data in form of csv using data api 
-download_data_api = PythonOperator(
-    task_id='download_data_from_api',
-    python_callable=download_data_function,
-    dag=dag
-)
+# download_data_api = PythonOperator(
+#     task_id='download_data_from_api',
+#     python_callable=download_data_function,
+#     dag=dag
+# )
 
 # load the data and save it in pickle file
 data_Loader = PythonOperator(
@@ -595,8 +595,8 @@ feature_engineering_test = PythonOperator(
 )
 
 # order in which tasks are run
-download_data_api >> branch_task >> [send_anomaly_alert, continue_pipeline] >> merge_branch \
->> data_Loader >> branch_task_load_data >> [send_anomaly_alert_load_data,continue_pipeline_load_data] >> merge_branch_load_data \
+# download_data_api >> branch_task >> [send_anomaly_alert, continue_pipeline] >> merge_branch \
+data_Loader >> branch_task_load_data >> [send_anomaly_alert_load_data,continue_pipeline_load_data] >> merge_branch_load_data \
 >> data_Bias \
 >> data_Split >> branch_task_split >> [send_anomaly_alert_train_test,continue_pipeline_train_test] >> merge_branch_train_test \
 >> data_schema_original \
